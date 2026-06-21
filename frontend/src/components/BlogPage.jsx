@@ -13,11 +13,14 @@ import {
 } from "../utils/selectedBlogSlice";
 import Comments from "./Comments";
 import { setIsOpen } from "../utils/commentSlice";
+import SaveButton from "./SaveButton";
 
 const BlogPage = () => {
   const { blogId } = useParams();
   const { token, email, id: userId } = useSelector((state) => state.user);
-  const { likes, comments, content } = useSelector((state) => state.selectedBlog);
+  const { likes, comments, content } = useSelector(
+    (state) => state.selectedBlog,
+  );
   const { isOpen } = useSelector((state) => state.comment);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -28,7 +31,7 @@ const BlogPage = () => {
       const {
         data: { blog },
       } = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/blogs/${blogId}`
+        `${import.meta.env.VITE_BACKEND_URL}/blogs/${blogId}`,
       );
       setBlogData(blog);
 
@@ -43,7 +46,7 @@ const BlogPage = () => {
   };
 
   const handleLike = async () => {
-    if(!token){
+    if (!token) {
       return navigate("/signin");
     }
     if (token) {
@@ -55,7 +58,7 @@ const BlogPage = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       dispatch(changeLikes(userId));
       toast.success(res.data.message);
@@ -103,7 +106,7 @@ const BlogPage = () => {
               ) : (
                 <i className="fi fi-rr-social-network text-3xl mt-1"></i>
               )}
-              <p className="text-2xl">{likes.length}</p>
+              <p className="text-2xl">{likes?.length}</p>
             </div>
 
             <div
@@ -115,51 +118,59 @@ const BlogPage = () => {
               <i className="fi fi-sr-comments text-2xl"></i>
               <p className="text-2xl">{comments?.length}</p>
             </div>
+            <SaveButton size={"text-2xl"} blogData={blogData} />
           </div>
 
           <div className="my-10">
-            {content.blocks.map((block) => {
+            {content.blocks.map((block, i) => {
               if (block.type == "header") {
                 if (block.data.level == 2) {
                   return (
-                    <h2 className="font-bold text-2xl my-4" key={""}
+                    <h2
+                      className="font-bold text-2xl my-4"
+                      key={i}
                       dangerouslySetInnerHTML={{ __html: block.data.text }}
                     ></h2>
                   );
                 } else if (block.data.level == 3) {
                   return (
-                    <h3 className="font-bold text-3xl my-4" 
+                    <h3
+                      className="font-bold text-3xl my-4"
                       dangerouslySetInnerHTML={{ __html: block.data.text }}
+                      key={i}
                     ></h3>
                   );
                 } else if (block.data.level == 4) {
                   return (
-                    <h4  className="font-bold text-4xl my-4"
+                    <h4
+                      className="font-bold text-4xl my-4"
                       dangerouslySetInnerHTML={{ __html: block.data.text }}
+                      key={i}
                     ></h4>
                   );
                 }
               } else if (block.type == "paragraph") {
                 return (
-                  <p className="my-4" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>
+                  <p
+                    className="my-4"
+                    dangerouslySetInnerHTML={{ __html: block.data.text }}
+                    key={i}
+                  ></p>
                 );
-              }
-              else if (block.type == "image") {
+              } else if (block.type == "image") {
                 return (
-                  <div className="my-4">
+                  <div className="my-4" key={i}>
                     <img src={block.data.file.url} alt="" />
                     <p className="text-center">{block.data.caption}</p>
                   </div>
                 );
-              }
-              else if (block.type == "CodeTool") {
+              } else if (block.type == "CodeTool") {
                 return (
                   <div className="my-4 bg-slate-700 p-5 rounded-md text-white">
                     <code>{block.data.code}</code>
                   </div>
                 );
               }
-
             })}
           </div>
         </div>

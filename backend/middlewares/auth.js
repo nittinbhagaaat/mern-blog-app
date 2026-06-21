@@ -20,9 +20,10 @@ const verifyUser = async (req, res, next) => {
     console.log(req.user)
     return next();
   } catch (error) {
+    console.log("ERROR: ", error);
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
+      message: "Something went wrong [Verify user]",
     });
   }
 };

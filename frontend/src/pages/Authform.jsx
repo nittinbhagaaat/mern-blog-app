@@ -43,7 +43,7 @@ const Authform = ({ type }) => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/${type}`,
-        userData
+        userData,
       );
 
       if (type === "signup") {
@@ -54,7 +54,6 @@ const Authform = ({ type }) => {
         dispatch(login(res.data.user));
         navigate("/");
       }
-
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -66,19 +65,23 @@ const Authform = ({ type }) => {
     }
   };
 
-  const handleGoogleAuth = async ()=>{
+  const handleGoogleAuth = async () => {
     try {
       let data = await googleAuth();
-      console.log(data.user)
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/google-auth`, {
-        accessToken: data?.user?.accessToken,
-      });
-      console.log(res);
-      // return data.user;
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+        {
+          accessToken: data?.accessToken,
+        },
+      );
+      dispatch(login(res.data.user));
+      toast.success(res.data.message);
+      navigate("/");
     } catch (error) {
-      console.log(`Error -> ${error}`)
+      console.log(`Error -> ${error}`);
+      toast.error(error.response.data.message);
     }
-  }
+  };
   return (
     <div className="w-full">
       <form
@@ -124,9 +127,12 @@ const Authform = ({ type }) => {
           {type === "signin" ? "Sign in" : "Sign up"}
         </button>
         <p>or</p>
-        <div onClick={handleGoogleAuth} className="w-full bg-white text-center py-2 rounded-md hover:cursor-pointer">
-          continue with 
-          <img src={GOOGLE} alt="" className="h-6 w-6 inline-block ml-1"/>
+        <div
+          onClick={handleGoogleAuth}
+          className="w-full bg-white text-center py-2 rounded-md hover:cursor-pointer"
+        >
+          continue with
+          <img src={GOOGLE} alt="" className="h-6 w-6 inline-block ml-1" />
         </div>
         <p className="text-sm">
           {type === "signin"

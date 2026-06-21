@@ -27,7 +27,7 @@ const blogSchema = mongoose.Schema(
     blogId: {
       type: String,
       required: true,
-      uniquw: true
+      unique: true
     },
     likes: [
       {
@@ -41,6 +41,14 @@ const blogSchema = mongoose.Schema(
         ref: "Comment",
       },
     ],
+    totalSaves: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+    },
     image: {
       type: String,
       required: true,

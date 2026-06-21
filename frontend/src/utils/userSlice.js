@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { createSlice } from "@reduxjs/toolkit";
 
 const userSlice = createSlice({
@@ -8,10 +9,16 @@ const userSlice = createSlice({
       // state.name = action.payload.name;
       // state.email = action.payload.email;
       // state.token = action.payload.token;
+      console.log(action.payload);
       localStorage.setItem("user", JSON.stringify(action.payload));
       return action.payload;
     },
-    logout(state, action) {},
+    logout(state, action) {
+      localStorage.removeItem("user");
+      return {
+        token: null
+      }
+    },
   },
 });
 

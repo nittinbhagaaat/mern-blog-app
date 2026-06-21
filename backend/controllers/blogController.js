@@ -281,7 +281,7 @@ const deleteBlog = async (req, res) => {
 const likeBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const creator = req.user;
+    const user = req.user;
     const blog = await Blog.findById(id);
     if (!blog) {
       return res.status(500).json({
@@ -289,19 +289,54 @@ const likeBlog = async (req, res) => {
         message: "Blog not found",
       });
     }
-    if (!blog.likes.includes(creator)) {
-      await Blog.updateOne({ _id: id }, { $push: { likes: creator } });
+    if (!blog.likes.includes(user)) {
+      await Blog.updateOne({ _id: id }, { $push: { likes: user } });
+      await User.findByIdAndUpdate(user, { $push: { likedBlogs: id } })
       res.status(200).json({
         success: true,
         message: "Blog liked successfully",
         isLiked: true,
       });
     } else {
-      await Blog.updateOne({ _id: id }, { $pull: { likes: creator } });
+      await Blog.updateOne({ _id: id }, { $pull: { likes: user } });
+      await User.findByIdAndUpdate(user, { $pull: { likedBlogs: id } })
       res.status(200).json({
         success: true,
         message: "Blog disliked successfully",
         isLiked: false,
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+const saveBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(500).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+    if (!blog.totalSaves.includes(user)) {
+      await Blog.updateOne({ _id: id }, { $set: { totalSaves: user } });
+      await User.findByIdAndUpdate(user, { $set: { savedBlogs: id } })
+      res.status(200).json({
+        success: true,
+        message: "Blog saved",
+      });
+    } else {
+      await Blog.updateOne({ _id: id }, { $unset: { totalSaves: user } });
+      await User.findByIdAndUpdate(user, { $unset: { savedBlogs: id } })
+      res.status(200).json({
+        success: true,
+        message: "Blog unsaved",
       });
     }
   } catch (error) {
@@ -319,4 +354,5 @@ module.exports = {
   updateBlog,
   deleteBlog,
   likeBlog,
+  saveBlog
 };

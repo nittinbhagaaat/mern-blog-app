@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import formatDate from "../utils/formatDate";
+import SaveButton from "./SaveButton";
 
 const Home = () => {
   const [userData, setUserData] = useState([]);
@@ -35,6 +36,10 @@ const Home = () => {
                   <div className="w-fit cursor-pointer flex gap-2 items-center justify-center">
                     <i className="fi fi-sr-comments text-lg mt-1"></i>
                     <p className="text-lg">{blog.comments.length}</p>
+                  </div>
+                  <div className="w-fit cursor-pointer flex gap-2 items-center justify-center">
+                    <SaveButton size={"text-lg"} blogData={blog} />
+                    {/* <p className="text-lg">{blog.comments.length}</p> */}
                   </div>
                 </div>
               </div>

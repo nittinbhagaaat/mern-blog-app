@@ -3,9 +3,12 @@ const User = require("../models/userSchema");
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
 const transporter = require("../utils/transporter");
 const { getAuth } = require("firebase-admin/auth");
+const ShortUniqueId = require("short-unique-id");
+const { randomUUID } = new ShortUniqueId({ length: 5 });
 
 // FIREBASE
 const admin = require("firebase-admin");
+const Blog = require("../models/blogSchema");
 admin.initializeApp({
   credential: admin.credential.cert({
     type: "service_account",
@@ -28,31 +31,40 @@ admin.initializeApp({
 const googleAuth = async (req, res) => {
   try {
     const { accessToken } = req.body;
-    let res = await getAuth().verifyIdToken(accessToken);
-    const { name, email } = res;
+    let response = await getAuth().verifyIdToken(accessToken);
+    const { name, email } = response;
     let user = await User.findOne({ email });
     if (user) {
-      // REGISTERED
-      let token = await generateJWT({
-        email: user.email,
-        id: user._id,
-      });
-      return res.status(200).json({
-        message: "Logged in successfully",
-        success: true,
-        user: {
-          id: user._id,
-          name: user.name,
+      if (user.googleAuth) {
+        // REGISTERED
+        let token = await generateJWT({
           email: user.email,
-          token,
-        },
-      });
+          id: user._id,
+        });
+        return res.status(200).json({
+          message: "Logged in successfully",
+          success: true,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            profilePic: user.profilePic,
+            token,
+          },
+        });
+      } else {
+        return res.status(400).json({
+          message: "This email is already registered",
+          success: true,
+        });
+      }
     }
 
     let newUser = await User.create({
       name,
       email,
       googleAuth: true,
+      verify: true
     });
 
     let token = await generateJWT({
@@ -74,7 +86,7 @@ const googleAuth = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Google auth]",
       success: false,
     });
   }
@@ -91,6 +103,12 @@ const createUser = async (req, res) => {
     }
     const user = await User.findOne({ email });
     if (user) {
+      if (user.googleAuth) {
+        return res.status(400).json({
+          message: "This email is already registered using google",
+          success: true,
+        });
+      }
       if (user?.verify) {
         return res.status(400).json({
           message: "Email already exist.",
@@ -118,7 +136,10 @@ const createUser = async (req, res) => {
       }
     }
     const hash = await bcrypt.hash(password, 10);
-    const newUser = await User.create({ name, email, password: hash });
+    const username = `${email
+      .toLowerCase()
+      .split("@")[0] + "-" + randomUUID()}`
+    const newUser = await User.create({ name, username, email, password: hash });
     let token = await generateJWT({
       email: newUser.email,
       id: newUser._id,
@@ -140,7 +161,7 @@ const createUser = async (req, res) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Create user]",
       success: false,
     });
   }
@@ -160,6 +181,12 @@ const loginUser = async (req, res) => {
       return res.status(500).json({
         message: "User not found",
         success: false,
+      });
+    }
+    if (user.googleAuth) {
+      return res.status(400).json({
+        message: "This email is already registered using google",
+        success: true,
       });
     }
     if (!user?.verify) {
@@ -194,6 +221,7 @@ const loginUser = async (req, res) => {
         success: false,
       });
     }
+    console.log("USER: ", user);
     return res.status(200).json({
       message: "User login successfully",
       success: true,
@@ -201,12 +229,13 @@ const loginUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        profilePic: user.profilePic,
         token,
       },
     });
   } catch (err) {
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Login user]",
       success: false,
     });
   }
@@ -225,7 +254,7 @@ const getUsers = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Get users]",
       success: false,
     });
   }
@@ -250,7 +279,7 @@ const getSingleUser = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Get single user]",
       success: false,
     });
   }
@@ -281,7 +310,7 @@ const updateUser = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Update user]",
       success: false,
     });
   }
@@ -305,7 +334,7 @@ const deleteUser = async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({
-      message: "Something went wrong",
+      message: "Something went wrong - [Delete user]",
       success: false,
     });
   }
@@ -348,6 +377,33 @@ const verifyEmail = async (req, res) => {
   }
 };
 
+
+const saveBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    console.log(id, user);
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(500).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+    await User.findByIdAndUpdate(user, { $push: { savedBlogs: id } })
+    return res.status(200).json({
+      success: true,
+      message: "Blog saved"
+    })
+  } catch (error) {
+    console.log("ERROR: ", error)
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createUser,
   loginUser,
@@ -357,4 +413,5 @@ module.exports = {
   deleteUser,
   verifyEmail,
   googleAuth,
+  saveBlog
 };
