@@ -17,6 +17,7 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
+      select: false
     },
     blogs: {
       type: [
@@ -30,10 +31,12 @@ const userSchema = mongoose.Schema(
     verify: {
       type: Boolean,
       default: false,
+      select: false,
     },
     googleAuth: {
       type: Boolean,
-      default: false
+      default: false,
+      select: false,
     },
     profilePic: {
       type: String,

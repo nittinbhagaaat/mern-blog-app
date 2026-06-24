@@ -2,10 +2,11 @@
 import { Route, Routes } from "react-router-dom";
 import Authform from "./pages/Authform";
 import Navbar from "./components/Navbar";
-import Home from "./components/Home";
-import AddBlog from "./components/AddBlog"
-import BlogPage from "./components/BlogPage";
-import VerifyUser from "./components/VerifyUser";
+import AddBlog from "./pages/AddBlog";
+import BlogPage from "./pages/BlogPage";
+import VerifyUser from "./pages/VerifyUser";
+import ProfilePage from "./pages/ProfilePage";
+import Home from "./pages/Home";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/blog/:blogId" element={<BlogPage />}></Route>
           <Route path="/edit/:id" element={<AddBlog />}></Route>
           <Route path="/verify-email/:token" element={<VerifyUser />}></Route>
+          <Route path="/:username" element={<ProfilePage />}></Route>
         </Route>
       </Routes>
     </div>

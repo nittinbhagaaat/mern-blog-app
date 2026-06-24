@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
-/* eslint-disable react/jsx-key */
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -11,9 +10,10 @@ import {
   changeLikes,
   removeSelectedBlog,
 } from "../utils/selectedBlogSlice";
-import Comments from "./Comments";
+import Comments from "../components/Comments";
 import { setIsOpen } from "../utils/commentSlice";
-import SaveButton from "./SaveButton";
+import SaveButton from "../components/SaveButton";
+import formatDate from "../utils/formatDate";
 
 const BlogPage = () => {
   const { blogId } = useParams();
@@ -26,6 +26,9 @@ const BlogPage = () => {
   const navigate = useNavigate();
   const [blogData, setBlogData] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [isFollowed, setIsFollowed] = useState(
+    blogData?.creator?.followers?.includes(userId),
+  );
   const fetchBlogById = async () => {
     try {
       const {
@@ -46,26 +49,56 @@ const BlogPage = () => {
   };
 
   const handleLike = async () => {
-    if (!token) {
-      return navigate("/signin");
-    }
-    if (token) {
-      setIsLiked((prev) => !prev);
-      let res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/blogs/like/${blogData._id}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
+    try {
+      if (!token) {
+        return navigate("/signin");
+      }
+      if (token) {
+        setIsLiked((prev) => !prev);
+        let res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/blogs/like/${blogData._id}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        },
-      );
-      dispatch(changeLikes(userId));
-      toast.success(res.data.message);
-    } else {
-      return toast.error("Please sign in to like");
+        );
+        dispatch(changeLikes(userId));
+        toast.success(res.data.message);
+      } else {
+        return toast.error("Please sign in to like");
+      }
+    } catch (error) {
+      console.log("ERROR: ", error);
     }
   };
+
+  const handleFollow = async (id) => {
+    try {
+      if (!token) {
+        return navigate("/signin");
+      }
+      if (token) {
+        let res = await axios.patch(
+          `${import.meta.env.VITE_BACKEND_URL}/follow/${id}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        return toast.success(res.data.message);
+      } else {
+        return toast.error("Please sign in to like");
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message);
+      console.log("ERROR: ", error);
+    }
+  };
+
   useEffect(() => {
     fetchBlogById();
     return () => {
@@ -83,7 +116,45 @@ const BlogPage = () => {
           <h1 className="text-4xl font-bold text-gray-700 capitalize">
             {blogData.title}
           </h1>
-          <p className="text-gray-600">{blogData?.creator?.name}</p>
+          <div className="flex items-center gap-2">
+            <Link to={`/@${blogData?.creator?.username}`}>
+              <div>
+                {token && (
+                  <img
+                    src={`https://api.dicebear.com/9.x/initials/svg?seed=${blogData?.creator?.name}`}
+                    alt=""
+                    className="h-10 rounded-full cursor-pointer hover:opacity-70"
+                  />
+                )}
+              </div>
+            </Link>
+            <div className="flex flex-col gap-0">
+              <div className="flex gap-1 items-center">
+                <Link to={`/@${blogData?.creator?.username}`}>
+                  <p
+                    className="text-gray-600 leading-none hover:underline"
+                    onClick={""}
+                  >
+                    {blogData?.creator?.name}
+                  </p>
+                </Link>
+                &middot;
+                <p
+                  className="text-blue-500 font-semibold cursor-pointer"
+                  onClick={() => {
+                    setIsFollowed((prev) => !prev);
+                    handleFollow(blogData?.creator?._id, token);
+                  }}
+                >
+                  {isFollowed ? "following" : "follow"}
+                </p>
+              </div>
+              <p className="">
+                Created at: {formatDate(blogData?.createdAt)} &middot; 6 min
+                read
+              </p>
+            </div>
+          </div>
           <img
             src={blogData.image}
             alt=""
@@ -166,7 +237,10 @@ const BlogPage = () => {
                 );
               } else if (block.type == "CodeTool") {
                 return (
-                  <div className="my-4 bg-slate-700 p-5 rounded-md text-white">
+                  <div
+                    className="my-4 bg-slate-700 p-5 rounded-md text-white"
+                    key={i}
+                  >
                     <code>{block.data.code}</code>
                   </div>
                 );

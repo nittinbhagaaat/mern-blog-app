@@ -85,6 +85,7 @@ const createBlog = async (req, res) => {
     });
   }
 };
+
 const getBlog = async (req, res) => {
   try {
     const blogs = await Blog.find({ draft: false }).populate({
@@ -103,6 +104,7 @@ const getBlog = async (req, res) => {
     });
   }
 };
+
 const getSingleBlog = async (req, res) => {
   try {
     const { blogId } = req.params;
@@ -116,7 +118,7 @@ const getSingleBlog = async (req, res) => {
       })
       .populate({
         path: "creator",
-        select: "name email",
+        select: "name email followers username",
       })
       .lean();
 
@@ -159,6 +161,7 @@ const getSingleBlog = async (req, res) => {
     });
   }
 };
+
 const updateBlog = async (req, res) => {
   try {
     const creator = req.user;
@@ -247,6 +250,7 @@ const updateBlog = async (req, res) => {
     });
   }
 };
+
 const deleteBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -278,6 +282,7 @@ const deleteBlog = async (req, res) => {
     });
   }
 };
+
 const likeBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -313,6 +318,7 @@ const likeBlog = async (req, res) => {
     });
   }
 };
+
 const saveBlog = async (req, res) => {
   try {
     const { id } = req.params;

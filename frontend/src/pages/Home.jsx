@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import formatDate from "../utils/formatDate";
-import SaveButton from "./SaveButton";
+import SaveButton from "../components/SaveButton";
 
 const Home = () => {
   const [userData, setUserData] = useState([]);

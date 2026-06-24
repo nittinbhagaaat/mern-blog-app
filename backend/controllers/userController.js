@@ -262,16 +262,23 @@ const getUsers = async (req, res) => {
 
 const getSingleUser = async (req, res) => {
   try {
-    let { id } = req.params;
-    let user = await User.findById(id).populate({
-      path: "blogs",
-    });
+    let { username } = req.params;
+    let user = await User.findOne({ username }).populate({
+      path: "blogs following likedBlogs savedBlogs",
+    }).populate({
+      path: "followers",
+      select: "name username"
+    }).select("-password -verify -__v -email -googleAuth");
     if (!user) {
       return res.status(200).json({
         message: "User not found",
         success: false,
       });
     }
+    // if (!user.showLikedBlogs) {
+      
+    // }
+
     return res.status(200).json({
       message: "User fetched successfully",
       success: true,
@@ -377,26 +384,33 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-
-const saveBlog = async (req, res) => {
+const followUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = req.user;
-    console.log(id, user);
-    const blog = await Blog.findById(id);
-    if (!blog) {
+    const followerId = req.user;
+    const user = await User.findById(id);
+    if (!user) {
       return res.status(500).json({
         success: false,
-        message: "Blog not found",
+        message: "User not found",
       });
     }
-    await User.findByIdAndUpdate(user, { $push: { savedBlogs: id } })
-    return res.status(200).json({
-      success: true,
-      message: "Blog saved"
-    })
+    if (!user.followers.includes(followerId)) {
+      await User.findByIdAndUpdate(id, { $set: { followers: followerId } });
+      await User.findByIdAndUpdate(followerId, { $set: { following: id } })
+      res.status(200).json({
+        success: true,
+        message: "Followed",
+      });
+    } else {
+      await User.findByIdAndUpdate(id, { $unset: { followers: followerId } });
+      await User.findByIdAndUpdate(followerId, { $unset: { following: id } })
+      res.status(200).json({
+        success: true,
+        message: "Unfollowed",
+      });
+    }
   } catch (error) {
-    console.log("ERROR: ", error)
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -413,5 +427,5 @@ module.exports = {
   deleteUser,
   verifyEmail,
   googleAuth,
-  saveBlog
+  followUser
 };
